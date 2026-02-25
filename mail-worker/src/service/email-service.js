@@ -53,9 +53,6 @@ const emailService = {
 			allReceive = accountRow.allReceive;
 		}
 
-		const isAdmin = c.get('user')?.email === c.env.admin;
-		const catchAllInbox = isAdmin && allReceive && Number(type) === emailConst.type.RECEIVE;
-
 		const query = orm(c)
 			.select({
 				...email,
@@ -75,7 +72,7 @@ const emailService = {
 			.where(
 				and(
 					allReceive ? eq(1,1) : eq(email.accountId, accountId),
-					catchAllInbox ? eq(1,1) : eq(email.userId, userId),
+					eq(email.userId, userId),
 					timeSort ? gt(email.emailId, emailId) : lt(email.emailId, emailId),
 					eq(email.type, type),
 					eq(email.isDel, isDel.NORMAL),
@@ -99,7 +96,7 @@ const emailService = {
 			.where(
 				and(
 					allReceive ? eq(1,1) : eq(email.accountId, accountId),
-					catchAllInbox ? eq(1,1) : eq(email.userId, userId),
+					eq(email.userId, userId),
 					eq(email.type, type),
 					eq(email.isDel, isDel.NORMAL),
 					eq(account.isDel, isDel.NORMAL)
@@ -109,7 +106,7 @@ const emailService = {
 		const latestEmailQuery = orm(c).select().from(email).where(
 			and(
 				allReceive ? eq(1,1) : eq(email.accountId, accountId),
-				catchAllInbox ? eq(1,1) : eq(email.userId, userId),
+				eq(email.userId, userId),
 				eq(email.type, type),
 				eq(email.isDel, isDel.NORMAL)
 			))
@@ -139,9 +136,8 @@ const emailService = {
 	async delete(c, params, userId) {
 		const { emailIds } = params;
 		const emailIdList = emailIds.split(',').map(Number);
-		const isAdmin = c.get('user')?.email === c.env.admin;
 		await orm(c).update(email).set({ isDel: isDel.DELETE }).where(
-			isAdmin ? inArray(email.emailId, emailIdList) : and(
+			and(
 				eq(email.userId, userId),
 				inArray(email.emailId, emailIdList)))
 			.run();
@@ -539,8 +535,6 @@ const emailService = {
 			let accountRow = await accountService.selectById(c, accountId);
 			allReceive = accountRow.allReceive;
 		}
-		const isAdmin = c.get('user')?.email === c.env.admin;
-		const catchAllInbox = isAdmin && allReceive;
 
 		let list = await orm(c).select({...email}).from(email)
 			.leftJoin(
@@ -550,7 +544,7 @@ const emailService = {
 			.where(
 				and(
 					gt(email.emailId, emailId),
-					catchAllInbox ? eq(1,1) : eq(email.userId, userId),
+					eq(email.userId, userId),
 					eq(email.isDel, isDel.NORMAL),
 					eq(account.isDel, isDel.NORMAL),
 					allReceive ? eq(1,1) : eq(email.accountId, accountId),
@@ -818,8 +812,7 @@ const emailService = {
 
 	async read(c, params, userId) {
 		const { emailIds } = params;
-		const isAdmin = c.get('user')?.email === c.env.admin;
-		await orm(c).update(email).set({ unread: emailConst.unread.READ }).where(isAdmin ? inArray(email.emailId, emailIds) : and(eq(email.userId, userId), inArray(email.emailId, emailIds)));
+		await orm(c).update(email).set({ unread: emailConst.unread.READ }).where(and(eq(email.userId, userId), inArray(email.emailId, emailIds)));
 	}
 };
 
