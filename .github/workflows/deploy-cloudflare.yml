@@ -84,16 +84,17 @@ jobs:
             echo "❌ CLOUDFLARE_API_TOKEN variable cannot be empty."
             exit 1
           fi
+
+          if [ -z "$R2_BUCKET_NAME" ]; then
+            echo "❌ R2_BUCKET_NAME variable cannot be empty. Keeping this required prevents deploy from removing the existing R2 binding."
+            exit 1
+          fi
           
           if [ -z "$CUSTOM_DOMAIN" ]; then
             echo "::warning:: CUSTOM_DOMAIN variable is not set."
           fi
           
           CONFIG_FILE="wrangler-action.toml"
-          
-          if [ -z "$R2_BUCKET_NAME" ]; then
-            sed -i '/\[\[r2_buckets\]\]/,/^$/d' "$CONFIG_FILE"
-          fi
           
           if [ -z "$LINUXDO_CLIENT_ID" ] || [ -z "$LINUXDO_CLIENT_SECRET" ]; then
             sed -i '/^linuxdo_client_id = /,/^linuxdo_switch = /d' "$CONFIG_FILE"
