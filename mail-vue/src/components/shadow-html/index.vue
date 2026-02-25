@@ -18,18 +18,70 @@ const container = ref(null)
 const contentBox = ref(null)
 let shadowRoot = null
 
+const BLOCK_TAGS = new Set(['script', 'iframe', 'object', 'embed', 'link', 'meta', 'base', 'form'])
+const URL_ATTRS = new Set(['href', 'src', 'xlink:href', 'action', 'formaction', 'poster'])
+
+function isUnsafeUrl(value = '') {
+  const lower = String(value).trim().toLowerCase()
+  return lower.startsWith('javascript:') || lower.startsWith('vbscript:') || lower.startsWith('data:text/html')
+}
+
+function sanitizeInlineStyle(value = '') {
+  const lower = String(value).toLowerCase()
+  if (lower.includes('expression(') || lower.includes('javascript:') || lower.includes('@import')) {
+    return ''
+  }
+  return value
+}
+
+function sanitizeHtmlAndBodyStyle(rawHtml = '') {
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(String(rawHtml), 'text/html')
+  const bodyStyle = sanitizeInlineStyle(doc.body?.getAttribute('style') || '')
+
+  doc.querySelectorAll('*').forEach(node => {
+    const tag = node.tagName?.toLowerCase()
+    if (BLOCK_TAGS.has(tag)) {
+      node.remove()
+      return
+    }
+
+    Array.from(node.attributes).forEach(attr => {
+      const name = attr.name.toLowerCase()
+      const value = attr.value || ''
+
+      if (name.startsWith('on') || name === 'srcdoc') {
+        node.removeAttribute(attr.name)
+        return
+      }
+
+      if (name === 'style') {
+        const safeStyle = sanitizeInlineStyle(value)
+        if (!safeStyle) {
+          node.removeAttribute(attr.name)
+        } else {
+          node.setAttribute(attr.name, safeStyle)
+        }
+        return
+      }
+
+      if (URL_ATTRS.has(name) && isUnsafeUrl(value)) {
+        node.removeAttribute(attr.name)
+      }
+    })
+  })
+
+  return {
+    html: doc.body?.innerHTML || '',
+    bodyStyle
+  }
+}
+
 function updateContent() {
   if (!shadowRoot) return;
 
-  // 1. 提取 <body> 的 style 属性（如果存在）
-  const bodyStyleRegex = /<body[^>]*style="([^"]*)"[^>]*>/i;
-  const bodyStyleMatch = props.html.match(bodyStyleRegex);
-  const bodyStyle = bodyStyleMatch ? bodyStyleMatch[1] : '';
+  const { html, bodyStyle } = sanitizeHtmlAndBodyStyle(props.html)
 
-  // 2. 移除 <body> 标签（保留内容）
-  const cleanedHtml = props.html.replace(/<\/?body[^>]*>/gi, '');
-
-  // 3. 将 body 的 style 应用到 .shadow-content
   shadowRoot.innerHTML = `
     <style>
       :host {
@@ -63,7 +115,6 @@ function updateContent() {
         width: fit-content;
         height: fit-content;
         min-width: 100%;
-        ${bodyStyle ? bodyStyle : ''} /* 注入 body 的 style */
       }
 
       img:not(table img) {
@@ -73,9 +124,14 @@ function updateContent() {
 
     </style>
     <div class="shadow-content">
-      ${cleanedHtml}
+      ${html}
     </div>
   `;
+
+  if (bodyStyle) {
+    const shadowContent = shadowRoot.querySelector('.shadow-content')
+    shadowContent?.setAttribute('style', bodyStyle)
+  }
 }
 
 function autoScale() {

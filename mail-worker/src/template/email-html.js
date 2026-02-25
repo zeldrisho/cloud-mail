@@ -1,12 +1,13 @@
-import { parseHTML } from 'linkedom';
 import domainUtils from '../utils/domain-uitls';
+import htmlSanitizeUtils from '../utils/html-sanitize-utils';
 
 export default function emailHtmlTemplate(html, domain) {
-
-	const { document } = parseHTML(html);
-	document.querySelectorAll('script').forEach(script => script.remove());
-	html = document.toString();
+	html = htmlSanitizeUtils.sanitizeHtml(html);
 	html = html.replace(/{{domain}}/g, domainUtils.toOssDomain(domain) + '/');
+	const escapedHtml = html
+		.replace(/\\/g, '\\\\')
+		.replace(/`/g, '\\`')
+		.replace(/\$\{/g, '\\${');
 
 	return `<!DOCTYPE html>
 <html lang='en' >
@@ -127,7 +128,7 @@ export default function emailHtmlTemplate(html, domain) {
         }
 
         // 使用示例
-        const exampleHtml = \`${html}\`;
+        const exampleHtml = \`${escapedHtml}\`;
 
         // 渲染HTML
         renderHTML(exampleHtml);

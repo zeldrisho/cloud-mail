@@ -5,7 +5,9 @@ import {emailConst} from "../const/entity-const";
 const dbInit = {
 	async init(c) {
 
-		const secret = c.req.param('secret');
+		const authHeader = c.req.header('authorization') || '';
+		const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+		const secret = c.req.header('x-init-secret') || bearerToken;
 
 		if (secret !== c.env.jwt_secret) {
 			return c.text('❌ JWT secret mismatch');
