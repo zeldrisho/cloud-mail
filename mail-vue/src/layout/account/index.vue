@@ -21,7 +21,9 @@
               <Icon icon="fluent:settings-24-filled" width="21" height="21" color="#909399"
                     v-if="showNullSetting(item)"/>
               <el-dropdown v-else>
-                <Icon icon="fluent:settings-24-filled" width="21" height="21" color="#909399"/>
+                <button class="settings-trigger" type="button" aria-label="account actions">
+                  <Icon icon="fluent:settings-24-filled" width="21" height="21" color="#909399" aria-hidden="true"/>
+                </button>
                 <template #dropdown>
                   <el-dropdown-menu>
                     <el-dropdown-item v-if="hasPerm('email:send')" @click="openSetName(item)">{{ $t('rename') }}</el-dropdown-item>
@@ -597,6 +599,18 @@ path[fill="#ffdda1"] {
         display: flex;
         align-items: center;
         gap: 10px;
+
+        .settings-trigger {
+          padding: 0;
+          margin: 0;
+          border: none;
+          background: transparent;
+          color: inherit;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
       }
 
       .send-email {
