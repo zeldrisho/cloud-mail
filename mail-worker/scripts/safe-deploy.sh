@@ -23,6 +23,10 @@ MISSING_VARS=()
 for key in "${PLACEHOLDERS[@]:-}"; do
   value="${!key:-}"
   if [ -z "$value" ]; then
+    upper_key="$(printf '%s' "$key" | tr '[:lower:]' '[:upper:]')"
+    value="${!upper_key:-}"
+  fi
+  if [ -z "$value" ]; then
     MISSING_VARS+=("$key")
     continue
   fi

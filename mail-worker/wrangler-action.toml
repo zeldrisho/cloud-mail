@@ -12,12 +12,12 @@ custom_domain = true
 
 [[d1_databases]]
 binding = "db"
-database_name = "cloud-mail" # Database name
-database_id = "${D1_DATABASE_ID}" # Use placeholder to reference env var
+database_name = "email" # Database name
+database_id = "${d1_database_id}" # Use placeholder to reference env var
 
 [[kv_namespaces]]
 binding = "kv"
-id = "${KV_NAMESPACE_ID}" # Use placeholder to reference env var
+id = "${kv_namespace_id}" # Use placeholder to reference env var
 
 [assets]
 binding = "assets"		#Static asset binding name, keep default

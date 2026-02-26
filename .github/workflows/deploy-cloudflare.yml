@@ -21,8 +21,8 @@ jobs:
       JWT_SECRET: ${{ secrets.JWT_SECRET || vars.JWT_SECRET }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || vars.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
-      D1_DATABASE_ID: ${{ secrets.D1_DATABASE_ID || vars.D1_DATABASE_ID }}
-      KV_NAMESPACE_ID: ${{ secrets.KV_NAMESPACE_ID || vars.KV_NAMESPACE_ID }}
+      d1_database_id: ${{ secrets.D1_DATABASE_ID || vars.D1_DATABASE_ID || secrets.d1_database_id || vars.d1_database_id }}
+      kv_namespace_id: ${{ secrets.KV_NAMESPACE_ID || vars.KV_NAMESPACE_ID || secrets.kv_namespace_id || vars.kv_namespace_id }}
       LINUXDO_CLIENT_ID: ${{ secrets.LINUXDO_CLIENT_ID || vars.LINUXDO_CLIENT_ID }}
       LINUXDO_CLIENT_SECRET: ${{ secrets.LINUXDO_CLIENT_SECRET || vars.LINUXDO_CLIENT_SECRET }}
       LINUXDO_CALLBACK_URL: ${{ secrets.LINUXDO_CALLBACK_URL || vars.LINUXDO_CALLBACK_URL }}
@@ -116,8 +116,8 @@ jobs:
           
           CONFIG_FILE="wrangler-action.toml"
           
-          if [ -n "$KV_NAMESPACE_ID" ]; then
-            sed -i "s|\${KV_NAMESPACE_ID}|${KV_NAMESPACE_ID}|g" "$CONFIG_FILE"
+          if [ -n "$kv_namespace_id" ]; then
+            sed -i "s|\${kv_namespace_id}|${kv_namespace_id}|g" "$CONFIG_FILE"
             echo "✅ Using the database from environment variables."
             exit 0
           fi
@@ -137,7 +137,7 @@ jobs:
           if echo "$KV_LIST" | jq -e ".[] | select(.title == \"$NAME\")" >/dev/null; then
             echo "✅ Database $NAME already exists."
             KV_ID=$(echo "$KV_LIST" | jq -r ".[] | select(.title == \"$NAME\") | .id")
-            echo "KV_NAMESPACE_ID: $KV_ID"
+            echo "kv_namespace_id: $KV_ID"
           else
             echo "⚠️ Database $NAME does not exist. Starting creation..."
             npx wrangler kv namespace create $NAME
@@ -145,7 +145,7 @@ jobs:
             KV_ID=$(echo "$KV_LIST" | jq -r ".[] | select(.title == \"$NAME\") | .id")
           fi
           
-          sed -i "s|\${KV_NAMESPACE_ID}|$KV_ID|g" "$CONFIG_FILE"
+          sed -i "s|\${kv_namespace_id}|$KV_ID|g" "$CONFIG_FILE"
           echo "✅ Setup completed."
 
       - name: 🐬 设置D1数据库 / Set up D1 database
@@ -154,8 +154,8 @@ jobs:
           
           CONFIG_FILE="wrangler-action.toml"
           
-          if [ -n "$D1_DATABASE_ID" ]; then
-            sed -i "s|\${D1_DATABASE_ID}|${D1_DATABASE_ID}|g" "$CONFIG_FILE"
+          if [ -n "$d1_database_id" ]; then
+            sed -i "s|\${d1_database_id}|${d1_database_id}|g" "$CONFIG_FILE"
             echo "✅ Using the database from environment variables."
             exit 0
           fi
@@ -175,7 +175,7 @@ jobs:
           if echo "$DB_LIST" | jq -e ".[] | select(.name == \"$NAME\")" >/dev/null; then
             echo "✅ Database $NAME already exists."
             D1_ID=$(echo "$DB_LIST" | jq -r ".[] | select(.name == \"$NAME\") | .uuid")
-            echo "D1_DATABASE_ID: $D1_ID"
+            echo "d1_database_id: $D1_ID"
           else
             echo "⚠️ Database $NAME does not exist. Starting creation..."
             npx wrangler d1 create $NAME
@@ -183,7 +183,7 @@ jobs:
             D1_ID=$(echo "$DB_LIST" | jq -r ".[] | select(.name == \"$NAME\") | .uuid")
           fi
           
-          sed -i "s|\${D1_DATABASE_ID}|$D1_ID|g" "$CONFIG_FILE"
+          sed -i "s|\${d1_database_id}|$D1_ID|g" "$CONFIG_FILE"
           echo "✅ Setup completed."
 
       - name: 🚀 开始部署 / Start deployment
