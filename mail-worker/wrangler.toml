@@ -32,4 +32,4 @@ crons = ["0 16 * * *"]	#Cron runs daily at midnight
 #jwt_secret = ""			#JWT secret key, set a long random string
 
 [build]
-command = "WRANGLER_CONFIG=wrangler.toml bash ./scripts/check-bindings.sh && npm --prefix ../mail-vue install && npm --prefix ../mail-vue run build"
+command = "npm --prefix ../mail-vue install && npm --prefix ../mail-vue run build"

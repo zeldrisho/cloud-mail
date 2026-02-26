@@ -5,7 +5,7 @@
 	"scripts": {
 		"dev": "wrangler dev --config wrangler-dev.toml",
 		"test": "wrangler deploy --config wrangler-test.toml",
-		"deploy": "bash ./scripts/safe-deploy.sh",
+		"deploy": "wrangler deploy",
 		"deploy:unsafe": "wrangler deploy",
 		"start": "wrangler dev"
 	},

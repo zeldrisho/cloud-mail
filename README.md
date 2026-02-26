@@ -109,8 +109,6 @@ Notes:
 ## Deploy Safety (Cloudflare CI)
 
 - `mail-worker/wrangler.toml` now keeps required `D1/KV` binding blocks on by default (`R2` remains optional).
-- CI/local deploy runs `mail-worker/scripts/check-bindings.sh` before build/deploy.
-- If binding values are placeholders or missing, deployment fails early to prevent accidental binding drops.
 
 ## Tech Stack
 
