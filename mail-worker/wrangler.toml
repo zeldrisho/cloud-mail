@@ -8,7 +8,7 @@ enabled = true
 
 [[d1_databases]]
 binding = "db"			#D1 binding name, keep default
-database_name = "cloud-mail"		#D1 database name
+database_name = "email"		#D1 database name
 database_id = "${D1_DATABASE_ID}"		#D1 database id (from env)
 
 [[kv_namespaces]]

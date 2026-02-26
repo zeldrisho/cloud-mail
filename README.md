@@ -109,6 +109,7 @@ Notes:
 ## Deploy Safety (Cloudflare CI)
 
 - `mail-worker/wrangler.toml` now keeps required `D1/KV` binding blocks on by default (`R2` remains optional).
+- For public repositories, keep `D1_DATABASE_ID`/`KV_NAMESPACE_ID` as placeholders in `wrangler.toml` and deploy with `npm --prefix mail-worker run deploy` so IDs are injected from environment variables.
 
 ## Tech Stack
 
