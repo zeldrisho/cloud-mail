@@ -22,7 +22,22 @@ first_value() {
 
 is_placeholder() {
   local value="$1"
-  [[ -z "$value" || "$value" =~ ^\$\{ || "$value" =~ ^REPLACE_ || "$value" =~ ^YOUR_ || "$value" =~ ^TODO_ ]]
+  [[ -z "$value" || "$value" =~ ^REPLACE_ || "$value" =~ ^YOUR_ || "$value" =~ ^TODO_ ]]
+}
+
+resolve_env_value() {
+  local raw_value="$1"
+  if [[ "$raw_value" =~ ^\$\{([A-Za-z_][A-Za-z0-9_]*)\}$ ]]; then
+    local env_name="${BASH_REMATCH[1]}"
+    local env_value="${!env_name:-}"
+    if [[ -z "$env_value" ]]; then
+      echo "❌ Missing required environment variable: $env_name (referenced by $CONFIG_FILE)." >&2
+      exit 1
+    fi
+    echo "$env_value"
+    return
+  fi
+  echo "$raw_value"
 }
 
 missing_blocks=()
@@ -41,6 +56,8 @@ fi
 
 d1_id="$(first_value database_id || true)"
 kv_id="$(first_value id || true)"
+d1_id="$(resolve_env_value "$d1_id")"
+kv_id="$(resolve_env_value "$kv_id")"
 
 if is_placeholder "$d1_id"; then
   echo "❌ Invalid D1 binding value in $CONFIG_FILE: database_id=\"$d1_id\""
@@ -56,6 +73,7 @@ fi
 
 if has_block "r2_buckets"; then
   bucket_name="$(first_value bucket_name || true)"
+  bucket_name="$(resolve_env_value "$bucket_name")"
   if is_placeholder "$bucket_name"; then
     echo "❌ Invalid R2 binding value in $CONFIG_FILE: bucket_name=\"$bucket_name\""
     echo "Set a real R2 bucket_name or remove [[r2_buckets]] intentionally."
