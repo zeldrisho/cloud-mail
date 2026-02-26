@@ -1,5 +1,4 @@
 import i18next from 'i18next';
-import zh from './zh.js'
 import en from './en.js'
 import app from '../hono/hono';
 
@@ -14,14 +13,11 @@ app.use('*', async (c, next) => {
 const resources = {
 	en: {
 		translation: en
-	},
-	zh: {
-		translation: zh,
-	},
+	}
 };
 
 i18next.init({
-	fallbackLng: 'zh',
+	fallbackLng: 'en',
 	resources,
 });
 

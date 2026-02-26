@@ -148,26 +148,26 @@ const emailService = {
 		return orm(c).insert(email).values({ ...params }).returning().get();
 	},
 
-	//邮件发送
+	// send email
 	async send(c, params, userId) {
 
 		let {
-			accountId, //发送账号id
-			name, //发件人名字
-			sendType, //发件类型
-			emailId, //邮件id，如果是回复邮件会带
-			receiveEmail, //收件人邮箱
-			text, //邮件纯文本
-			content, //邮件内容
-			subject, //邮件标题
-			attachments //附件
+			accountId, //sender account id
+			name, //sender name
+			sendType, //send type
+			emailId, //email id, present for replies
+			receiveEmail, //recipient mailbox
+			text, //plain text body
+			content, //email content
+			subject, //email subject
+			attachments //attachments
 		} = params;
 
 		const { resendTokens, r2Domain, send, domainList } = await settingService.query(c);
 
 		let { imageDataList, html } = await attService.toImageUrlHtml(c, content);
 
-		//判断是否关闭发件功能
+		//check if sending is disabled
 		if (send === settingConst.send.CLOSE) {
 			throw new BizError(t('disabledSend'), 403);
 		}
@@ -175,7 +175,7 @@ const emailService = {
 		const userRow = await userService.selectById(c, userId);
 		const roleRow = await roleService.selectById(c, userRow.type);
 
-		//判断接收方是不是全部为站内邮箱
+		//check whether all recipients are internal mailboxes
 		const allInternal = receiveEmail.every(email => {
 			const domain = '@' + emailUtils.getDomain(email);
 			return domainList.includes(domain);
@@ -183,19 +183,19 @@ const emailService = {
 
 		if (c.env.admin !== userRow.email) {
 
-			//发件被禁用
+			//sending disabled
 			if (roleRow.sendType === 'ban') {
 				throw new BizError(t('bannedSend'), 403);
 			}
 
-			//发件被禁用
+			//sending disabled
 			if (roleRow.sendType === 'internal' && !allInternal) {
 				throw new BizError(t('onlyInternalSend'), 403);
 			}
 
 		}
 
-		//如果不是管理员，权限设置了发送次数
+		//if not admin, enforce send quota
 		if (c.env.admin !== userRow.email && roleRow.sendCount) {
 
 			if (userRow.sendCount >= roleRow.sendCount) {
@@ -221,7 +221,7 @@ const emailService = {
 		}
 
 		if (c.env.admin !== userRow.email) {
-			//用户没有这个域名的使用权限
+			//user has no permission for this domain
 			if(!roleService.hasAvailDomainPerm(roleRow.availDomain, accountRow.email)) {
 				throw new BizError(t('noDomainPermSend'),403)
 			}
@@ -231,12 +231,12 @@ const emailService = {
 		const domain = emailUtils.getDomain(accountRow.email);
 		const resendToken = resendTokens[domain];
 
-		//如果接收方存在站外邮箱，又没有resend token
+		//if external recipients exist and no resend token
 		if (!resendToken && !allInternal) {
 			throw new BizError(t('noResendToken'));
 		}
 
-		//没有发件人名字自动截取
+		// auto-derive sender name when missing
 		if (!name) {
 			name = emailUtils.getName(accountRow.email);
 		}
@@ -245,7 +245,7 @@ const emailService = {
 			messageId: null
 		};
 
-		//如果是回复邮件
+		//if this is a reply
 		if (sendType === 'reply') {
 
 			emailRow = await this.selectById(c, emailId);
@@ -258,7 +258,7 @@ const emailService = {
 
 		let resendResult = {};
 
-		//存在站外时邮箱全部由resend发送
+		//when external recipients exist, send all via Resend
 		if (!allInternal) {
 
 			const resend = new Resend(resendToken);
@@ -292,10 +292,10 @@ const emailService = {
 
 		imageDataList = imageDataList.map(item => ({...item, contentId: `<${item.contentId}>`}))
 
-		//把图片标签cid标签切换会通用url
+		//convert image CID tags to public URLs
 		html = this.imgReplace(html, imageDataList, r2Domain);
 
-		//封装数据保存到数据库
+		//build data payload for DB
 		const emailData = {};
 		emailData.sendEmail = accountRow.email;
 		emailData.name = name;
@@ -321,15 +321,15 @@ const emailService = {
 			emailData.relation = emailRow.messageId;
 		}
 
-		//如果权限有发送次数增加用户发送次数
+		//increment user send count when quota is enabled
 		if (roleRow.sendCount && roleRow.sendType !== 'internal') {
 			await userService.incrUserSendCount(c, receiveEmail.length, userId);
 		}
 
-		//保存到数据库并返回结果
+		//save to database and return result
 		const emailResult = await orm(c).insert(email).values(emailData).returning().get();
 
-		//保存内嵌附件
+		// save embedded attachments
 		if (imageDataList.length > 0) {
 			if (imageDataList.length > 10) {
 				throw new BizError(t('imageAttLimit'));
@@ -337,7 +337,7 @@ const emailService = {
 			await attService.saveArticleAtt(c, imageDataList, userId, accountId, emailResult.emailId);
 		}
 
-		//保存普通附件
+		// save regular attachments
 		if (attachments?.length > 0) {
 			if (attachments.length > 10) {
 				throw new BizError(t('attLimit'));
@@ -348,7 +348,7 @@ const emailService = {
 		const attList = await attService.selectByEmailIds(c, [emailResult.emailId]);
 		emailResult.attList = attList;
 
-		//如果全是站内接收方，直接写入数据库
+		//if all recipients are internal, write directly to DB
 		if (allInternal) {
 			await this.HandleOnSiteEmail(c, receiveEmail, emailResult, attList);
 		}
@@ -356,7 +356,7 @@ const emailService = {
 		const dateStr = dayjs().format('YYYY-MM-DD');
 		let daySendTotal = await c.env.kv.get(kvConst.SEND_DAY_COUNT + dateStr);
 
-		//记录每天发件次数统计
+		//record daily send count stats
 		if (!daySendTotal) {
 			await c.env.kv.put(kvConst.SEND_DAY_COUNT + dateStr, JSON.stringify(receiveEmail.length), { expirationTtl: 60 * 60 * 24 });
 		} else  {
@@ -367,24 +367,24 @@ const emailService = {
 		return [ emailResult ];
 	},
 
-	//处理站内邮件发送
+	// handle internal email delivery
 	async HandleOnSiteEmail(c, receiveEmail, sendEmailData, attList) {
 
 		const { noRecipient  } = await settingService.query(c);
 
-		//查询所有收件人账号信息
+		//query all recipient account info
 		let accountList = await orm(c).select().from(account).where(inArray(account.email, receiveEmail)).all();
 
-		//查询所有收件人权限身份
+		//query all recipient roles
 		const userIds = accountList.map(accountRow => accountRow.userId);
 		let roleList = await roleService.selectByUserIds(c, userIds);
 
-		//封装数据库准备保存到数据库
+		//build records for DB insertion
 		const emailDataList = [];
 
 		for (const email of receiveEmail) {
 
-			//把发件人邮件改成收件
+			//mark sender copy as received
 			const emailValues = {...sendEmailData}
 			emailValues.status = emailConst.status.RECEIVE;
 			emailValues.type = emailConst.type.RECEIVE;
@@ -394,10 +394,10 @@ const emailService = {
 
 			const accountRow = accountList.find(accountRow => accountRow.email === email);
 
-			//如果收件人存在就把邮件信息改成收件人的
+			//if recipient exists, adapt mail data for recipient
 			if (accountRow) {
 
-				//设置给收件人保存
+				//assign data for recipient storage
 				emailValues.userId = accountRow.userId;
 				emailValues.accountId = accountRow.accountId;
 				emailValues.type = emailConst.type.RECEIVE;
@@ -407,7 +407,7 @@ const emailService = {
 
 				let { banEmail, availDomain } = roleRow;
 
-				//如果收件人没有这个域名的使用权限和有邮件拦截，就把邮件改为拒收状态
+				//if recipient lacks domain permission or has interception, mark as rejected
 				if (email !== c.env.admin) {
 
 					if (!roleService.hasAvailDomainPerm(availDomain, email)) {
@@ -424,13 +424,13 @@ const emailService = {
 
 			} else {
 
-				//设置无收件人邮件信息
+				//set no-recipient mail info
 				emailValues.userId = 0;
 				emailValues.accountId = 0;
 				emailValues.type = emailConst.type.RECEIVE;
 				emailValues.status = emailConst.status.NOONE;
 
-				//如果无人收件关闭改为拒收
+				//if no recipient accepted, mark as rejected
 				if (noRecipient === settingConst.noRecipient.CLOSE) {
 					emailValues.status = emailConst.status.BOUNCED;
 					emailValues.message = `Recipient not found: <${email}>`;
@@ -442,14 +442,14 @@ const emailService = {
 
 		}
 
-		//保存邮件
+		//save emails
 		const receiveEmailList = emailDataList.filter(emailRow => emailRow.status === emailConst.status.RECEIVE || emailRow.status === emailConst.status.NOONE);
 
 		for (const emailData of receiveEmailList) {
 
 			const emailRow = await orm(c).insert(email).values(emailData).returning().get();
 
-			//设置附件保存
+			// set attachment persistence
 			for (const attRow of attList) {
 				const attValues = {...attRow};
 				attValues.emailId = emailRow.emailId;
@@ -466,7 +466,7 @@ const emailService = {
 
 		let status = emailConst.status.DELIVERED;
 		let message = ''
-		//如果有拒收邮件，就把发件人的邮件改成拒收
+		//if any mail is rejected, mark sender copy as rejected
 		if (bouncedEmail) {
 			const messageJson = { message: bouncedEmail.message };
 			message = JSON.stringify(messageJson);

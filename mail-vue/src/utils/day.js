@@ -37,19 +37,19 @@ export function fromNow(date) {
     } else {
 
         if (isToday) {
-            if (diffSeconds < 60) return `几秒前`;
-            if (diffMinutes < 60) return `${diffMinutes}分钟前`;
-            if (diffHours >= 1 && diffHours < 2) return '1小时前';
+            if (diffSeconds < 60) return `a few seconds ago`;
+            if (diffMinutes < 60) return `$1 minutes ago`;
+            if (diffHours >= 1 && diffHours < 2) return '1 hour ago';
             return d.format('HH:mm');
         }
         else if (now.subtract(1, 'day').isSame(d, 'day')) {
-            return `昨天 ${d.format('HH:mm')}`;
+            return `Yesterday ${d.format('HH:mm')}`;
         }
         else if (now.subtract(2, 'day').isSame(d, 'day')) {
-            return `前天 ${d.format('HH:mm')}`;
+            return `The day before ${d.format('HH:mm')}`;
         }
         return d.year() === now.year()
-            ? d.format('M月D日')
+            ? d.format('MM-DD')
             : d.format('YYYY/M/D');
 
     }
@@ -76,7 +76,7 @@ export function formatDetailDate(time) {
             ? d.format('ddd, MMM D, h:mm A')
             : d.format('ddd, MMM D, YYYY, h:mm A');
     } else {
-        return d.format('YYYY年M月D日 ddd AH:mm');
+        return d.format('YYYY-MM-DD ddd AH:mm');
     }
 }
 

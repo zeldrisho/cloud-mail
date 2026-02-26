@@ -21,7 +21,7 @@ const analysisService = {
 
 		localDate = dayjs(localDate.format('YYYY-MM-DD HH:mm:ss'))
 
-		//获取时差
+		//get timezone offset
 		const diffHours = localDate.diff(utcDate, 'hour',true);
 
 

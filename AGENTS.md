@@ -4,7 +4,7 @@
 This repository has two main apps:
 - `mail-vue/`: Vue 3 + Vite frontend. Main code is in `src/` (`views/`, `components/`, `store/`, `request/`, `router/`), with static assets in `public/`.
 - `mail-worker/`: Cloudflare Worker backend using Hono. Core code is in `src/` (`api/`, `service/`, `entity/`, `dao/`, `utils/`, `security/`), with tests in `test/`.
-- `doc/`: deployment notes and screenshots.
+- `docs/`: deployment notes and screenshots.
 - `.github/workflows/deploy-cloudflare.yml`: CI/CD deployment pipeline.
 
 ## Build, Test, and Development Commands
@@ -38,7 +38,7 @@ Use `npm` in each subproject.
 - Add/update tests for any backend behavior change; include regression coverage for bug fixes.
 
 ## Commit & Pull Request Guidelines
-- Follow repository commit style: short, imperative summaries (commonly Chinese), e.g., `修复登录鉴权异常` / `新增邮件转发`.
+- Follow repository commit style: short, imperative summaries, e.g., `fix login auth issue` / `add email forwarding`.
 - Keep commits focused by module (`mail-vue` vs `mail-worker`).
 - PRs should include:
   - clear scope and motivation,

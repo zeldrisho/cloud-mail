@@ -1,7 +1,7 @@
 import BizError from '../error/biz-error';
 import orm from '../entity/orm';
 import { v4 as uuidv4 } from 'uuid';
-import { and, asc, desc, eq, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, lt, ne, sql } from 'drizzle-orm';
 import saltHashUtils from '../utils/crypto-utils';
 import cryptoUtils from '../utils/crypto-utils';
 import emailUtils from '../utils/email-utils';
@@ -10,12 +10,64 @@ import verifyUtils from '../utils/verify-utils';
 import { t } from '../i18n/i18n';
 import reqUtils from '../utils/req-utils';
 import dayjs from 'dayjs';
-import { isDel, roleConst } from '../const/entity-const';
+import { emailConst, isDel, roleConst } from '../const/entity-const';
 import email from '../entity/email';
 import userService from './user-service';
 import KvConst from '../const/kv-const';
 
 const publicService = {
+
+	async inbox(c, params) {
+
+		let { toEmail, emailId, size, includeBody } = params;
+
+		if (!toEmail) {
+			throw new BizError(t('emptyEmail'));
+		}
+
+		if (!verifyUtils.isEmail(toEmail)) {
+			throw new BizError(t('notEmail'));
+		}
+
+		emailId = Number(emailId);
+		if (isNaN(emailId) || emailId <= 0) {
+			emailId = 9999999999;
+		}
+
+		size = Number(size);
+		if (isNaN(size) || size <= 0) {
+			size = 20;
+		}
+		if (size > 50) {
+			size = 50;
+		}
+
+		includeBody = Number(includeBody) === 1;
+
+		const fields = {
+			emailId: email.emailId,
+			sendEmail: email.sendEmail,
+			sendName: email.name,
+			subject: email.subject,
+			toEmail: email.toEmail,
+			toName: email.toName,
+			type: email.type,
+			createTime: email.createTime
+		};
+
+		if (includeBody) {
+			fields.content = email.content;
+			fields.text = email.text;
+		}
+
+		return orm(c).select(fields).from(email).where(and(
+			sql`${email.toEmail} COLLATE NOCASE = ${toEmail}`,
+			lt(email.emailId, emailId),
+			eq(email.type, emailConst.type.RECEIVE),
+			eq(email.isDel, isDel.NORMAL),
+			ne(email.status, emailConst.status.SAVING)
+		)).orderBy(desc(email.emailId)).limit(size);
+	},
 
 	async emailList(c, params) {
 

@@ -59,7 +59,7 @@ const attService = {
 
 		for (const img of images) {
 
-			//邮件正文base64图片转cid附件
+			// convert base64 images in email body to CID attachments
 			const src = img.getAttribute('src');
 			if (src && src.startsWith('data:image')) {
 				const file = fileUtils.base64ToFile(src);
@@ -81,7 +81,7 @@ const attService = {
 				imageDataList.push(attData);
 			}
 
-			//邮件正文站内图片转cid附件
+			// convert internal images in email body to CID attachments
 			if (src && (src.startsWith(domainUtils.toOssDomain(r2Domain)) || src.startsWith('attachments/'))) {
 
 				const cid = uuidv4().replace(/-/g, '')
@@ -116,11 +116,11 @@ const attService = {
 			}
 		}
 
-		//查询已有内嵌url图片信息
+		// query existing embedded URL image info
 		const keys = [...new Set(imageDataList.filter(item => item.path).map(item => item.key))];
 		const dbImageList  = await this.selectOneByKeys(c, keys);
 
-		//设置给当前附件
+		// assign to current attachment
 		imageDataList.forEach(image => {
 			dbImageList.forEach(dbImage => {
 				if (image.path && (image.key === dbImage.key)) {

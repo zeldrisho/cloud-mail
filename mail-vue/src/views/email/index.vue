@@ -101,12 +101,12 @@ async function latest() {
         const curTimeSort = params.timeSort
         let list = []
 
-        //确保发起请求时最后一个邮件是当前账号的,或者
+        //Ensure the latest email at request start belongs to current account, or
         if (accountId === scroll.value.latestEmail?.reqAccountId) {
           list = await emailLatest(latestId, accountId, allReceive);
         }
 
-        //确保请求回来后，账号没有切换，时间排序没有改变，全部邮件类型没变
+        //Ensure account, sort order, and mail type did not change when response returns
         if (accountId === accountStore.currentAccountId && params.timeSort === curTimeSort && allReceive === accountStore.currentAccount.allReceive) {
           if (list.length > 0) {
 
