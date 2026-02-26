@@ -10,14 +10,23 @@ fi
 
 has_block() {
   local block_name="$1"
-  rg -n "^[[:space:]]*\\[\\[$block_name\\]\\]" "$CONFIG_FILE" > /dev/null
+  search_lines "^[[:space:]]*\\[\\[$block_name\\]\\]" > /dev/null
 }
 
 first_value() {
   local key="$1"
-  rg -n "^[[:space:]]*$key[[:space:]]*=" "$CONFIG_FILE" \
+  search_lines "^[[:space:]]*$key[[:space:]]*=" \
     | head -n 1 \
     | sed -E "s/^[^=]+=[[:space:]]*\"?([^\"]*)\"?.*$/\\1/"
+}
+
+search_lines() {
+  local pattern="$1"
+  if command -v rg > /dev/null 2>&1; then
+    rg -n "$pattern" "$CONFIG_FILE"
+  else
+    grep -nE "$pattern" "$CONFIG_FILE"
+  fi
 }
 
 is_placeholder() {
