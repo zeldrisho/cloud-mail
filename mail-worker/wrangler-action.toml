@@ -45,4 +45,4 @@ linuxdo_callback_url = "${LINUXDO_CALLBACK_URL}"
 linuxdo_switch = "${LINUXDO_SWITCH}"
 
 [build]
-command = "npm --prefix ../mail-vue install && npm --prefix ../mail-vue run build"
+command = "WRANGLER_CONFIG=wrangler-action.toml bash ./scripts/check-bindings.sh && npm --prefix ../mail-vue install && npm --prefix ../mail-vue run build"

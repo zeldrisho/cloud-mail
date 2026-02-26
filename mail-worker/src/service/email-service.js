@@ -445,20 +445,35 @@ const emailService = {
 		//save emails
 		const receiveEmailList = emailDataList.filter(emailRow => emailRow.status === emailConst.status.RECEIVE || emailRow.status === emailConst.status.NOONE);
 
-		for (const emailData of receiveEmailList) {
+		let insertedEmailRows = [];
+		if (receiveEmailList.length > 0) {
+			insertedEmailRows = await orm(c).insert(email).values(receiveEmailList).returning().all();
+		}
 
-			const emailRow = await orm(c).insert(email).values(emailData).returning().get();
-
-			// set attachment persistence
-			for (const attRow of attList) {
-				const attValues = {...attRow};
-				attValues.emailId = emailRow.emailId;
-				attValues.accountId = emailRow.accountId;
-				attValues.userId = emailRow.userId;
-				attValues.attId = null;
+		if (attList.length > 0 && insertedEmailRows.length > 0) {
+			const attValues = [];
+			insertedEmailRows.forEach(emailRow => {
+				attList.forEach(attRow => {
+					attValues.push({
+						userId: emailRow.userId,
+						emailId: emailRow.emailId,
+						accountId: emailRow.accountId,
+						key: attRow.key,
+						filename: attRow.filename,
+						mimeType: attRow.mimeType,
+						size: attRow.size,
+						status: attRow.status,
+						type: attRow.type,
+						disposition: attRow.disposition,
+						related: attRow.related,
+						contentId: attRow.contentId,
+						encoding: attRow.encoding
+					});
+				});
+			});
+			if (attValues.length > 0) {
 				await orm(c).insert(att).values(attValues).run();
 			}
-
 		}
 
 		const bouncedEmail = emailDataList.find(emailRow => emailRow.status === emailConst.status.BOUNCED);
@@ -598,7 +613,7 @@ const emailService = {
 
 	async allList(c, params) {
 
-		let { emailId, size, name, subject, accountEmail, userEmail, type, timeSort } = params;
+		let { emailId, size, name, subject, content, accountEmail, userEmail, type, timeSort } = params;
 
 		size = Number(size);
 
@@ -658,6 +673,15 @@ const emailService = {
 			conditions.push(sql`${email.subject} COLLATE NOCASE LIKE ${'%'+ subject + '%'}`);
 		}
 
+		if (content) {
+			conditions.push(
+				or(
+					sql`${email.content} COLLATE NOCASE LIKE ${'%'+ content + '%'}`,
+					sql`${email.text} COLLATE NOCASE LIKE ${'%'+ content + '%'}`
+				)
+			);
+		}
+
 		conditions.push(ne(email.status, emailConst.status.SAVING));
 
 		const countConditions = [...conditions];
@@ -684,9 +708,9 @@ const emailService = {
 			query.orderBy(desc(email.emailId));
 		}
 
-		const listQuery = await query.limit(size).all();
-		const totalQuery = await queryCount.get();
-		const latestEmailQuery = await orm(c).select().from(email)
+		const listQuery = query.limit(size).all();
+		const totalQuery = queryCount.get();
+		const latestEmailQuery = orm(c).select().from(email)
 			.where(and(
 				eq(email.type, emailConst.type.RECEIVE),
 				ne(email.status, emailConst.status.SAVING)
@@ -735,10 +759,17 @@ const emailService = {
 		if (emailIds.length > 0) {
 
 			const attList = await attService.selectByEmailIds(c, emailIds);
+			const attMap = new Map();
+
+			attList.forEach(attRow => {
+				if (!attMap.has(attRow.emailId)) {
+					attMap.set(attRow.emailId, []);
+				}
+				attMap.get(attRow.emailId).push(attRow);
+			});
 
 			list.forEach(emailRow => {
-				const atts = attList.filter(attRow => attRow.emailId === emailRow.emailId);
-				emailRow.attList = atts;
+				emailRow.attList = attMap.get(emailRow.emailId) || [];
 			});
 		}
 	},

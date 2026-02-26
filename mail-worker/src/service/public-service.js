@@ -1,7 +1,7 @@
 import BizError from '../error/biz-error';
 import orm from '../entity/orm';
 import { v4 as uuidv4 } from 'uuid';
-import { and, asc, desc, eq, lt, ne, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, lt, ne, sql } from 'drizzle-orm';
 import saltHashUtils from '../utils/crypto-utils';
 import cryptoUtils from '../utils/crypto-utils';
 import emailUtils from '../utils/email-utils';
@@ -19,7 +19,7 @@ const publicService = {
 
 	async inbox(c, params) {
 
-		let { toEmail, emailId, size, includeBody } = params;
+		let { toEmail, emailId, afterId, size, includeBody } = params;
 
 		if (!toEmail) {
 			throw new BizError(t('emptyEmail'));
@@ -32,6 +32,11 @@ const publicService = {
 		emailId = Number(emailId);
 		if (isNaN(emailId) || emailId <= 0) {
 			emailId = 9999999999;
+		}
+
+		afterId = Number(afterId);
+		if (isNaN(afterId) || afterId < 0) {
+			afterId = 0;
 		}
 
 		size = Number(size);
@@ -60,81 +65,106 @@ const publicService = {
 			fields.text = email.text;
 		}
 
-		return orm(c).select(fields).from(email).where(and(
+		const conditions = [
 			sql`${email.toEmail} COLLATE NOCASE = ${toEmail}`,
-			lt(email.emailId, emailId),
 			eq(email.type, emailConst.type.RECEIVE),
 			eq(email.isDel, isDel.NORMAL),
 			ne(email.status, emailConst.status.SAVING)
-		)).orderBy(desc(email.emailId)).limit(size);
+		];
+
+		const query = orm(c).select(fields).from(email);
+
+		if (afterId > 0) {
+			conditions.push(gt(email.emailId, afterId));
+			query.orderBy(asc(email.emailId));
+		} else {
+			conditions.push(lt(email.emailId, emailId));
+			query.orderBy(desc(email.emailId));
+		}
+
+		return query.where(and(...conditions)).limit(size);
 	},
 
 	async emailList(c, params) {
 
-		let { toEmail, content, subject, sendName, sendEmail, timeSort, num, size, type , isDel } = params
+		let { toEmail, content, subject, sendName, sendEmail, timeSort, num, size, type, isDel, includeBody, afterId } = params;
 
-		const query = orm(c).select({
-				emailId: email.emailId,
-				sendEmail: email.sendEmail,
-				sendName: email.name,
-				subject: email.subject,
-				toEmail: email.toEmail,
-				toName: email.toName,
-				type: email.type,
-				createTime: email.createTime,
-				content: email.content,
-				text: email.text,
-				isDel: email.isDel,
-		}).from(email)
+		const fields = {
+			emailId: email.emailId,
+			sendEmail: email.sendEmail,
+			sendName: email.name,
+			subject: email.subject,
+			toEmail: email.toEmail,
+			toName: email.toName,
+			type: email.type,
+			createTime: email.createTime,
+			isDel: email.isDel
+		};
 
-		if (!size) {
-			size = 20
+		if (includeBody === undefined || Number(includeBody) === 1) {
+			fields.content = email.content;
+			fields.text = email.text;
 		}
 
-		if (!num) {
-			num = 1
-		}
+		const query = orm(c).select(fields).from(email);
 
 		size = Number(size);
+		if (isNaN(size) || size <= 0) {
+			size = 20;
+		}
+		if (size > 50) {
+			size = 50;
+		}
+
 		num = Number(num);
+		if (isNaN(num) || num <= 0) {
+			num = 1;
+		}
 
-		num = (num - 1) * size;
+		afterId = Number(afterId);
+		if (isNaN(afterId) || afterId < 0) {
+			afterId = 0;
+		}
 
-		let conditions = []
+		const offset = (num - 1) * size;
+		const conditions = [ne(email.status, emailConst.status.SAVING)];
 
 		if (toEmail) {
-			conditions.push(sql`${email.toEmail} COLLATE NOCASE LIKE ${toEmail}`)
+			conditions.push(sql`${email.toEmail} COLLATE NOCASE LIKE ${toLikeValue(toEmail)}`);
 		}
 
 		if (sendEmail) {
-			conditions.push(sql`${email.sendEmail} COLLATE NOCASE LIKE ${sendEmail}`)
+			conditions.push(sql`${email.sendEmail} COLLATE NOCASE LIKE ${toLikeValue(sendEmail)}`);
 		}
 
 		if (sendName) {
-			conditions.push(sql`${email.name} COLLATE NOCASE LIKE ${sendName}`)
+			conditions.push(sql`${email.name} COLLATE NOCASE LIKE ${toLikeValue(sendName)}`);
 		}
 
 		if (subject) {
-			conditions.push(sql`${email.subject} COLLATE NOCASE LIKE ${subject}`)
+			conditions.push(sql`${email.subject} COLLATE NOCASE LIKE ${toLikeValue(subject)}`);
 		}
 
 		if (content) {
-			conditions.push(sql`${email.content} COLLATE NOCASE LIKE ${content}`)
+			conditions.push(
+				sql`(${email.content} COLLATE NOCASE LIKE ${toLikeValue(content)} OR ${email.text} COLLATE NOCASE LIKE ${toLikeValue(content)})`
+			);
 		}
 
 		if (type || type === 0) {
-			conditions.push(eq(email.type, type))
+			conditions.push(eq(email.type, Number(type)));
 		}
 
 		if (isDel || isDel === 0) {
-			conditions.push(eq(email.isDel, isDel))
+			conditions.push(eq(email.isDel, Number(isDel)));
 		}
 
-		if (conditions.length === 1) {
-			query.where(...conditions)
-		} else if (conditions.length > 1) {
-			query.where(and(...conditions))
+		if (afterId > 0) {
+			query.where(and(...conditions, gt(email.emailId, afterId)));
+			return query.orderBy(asc(email.emailId)).limit(size);
 		}
+
+		query.where(and(...conditions));
 
 		if (timeSort === 'asc') {
 			query.orderBy(asc(email.emailId));
@@ -142,7 +172,7 @@ const publicService = {
 			query.orderBy(desc(email.emailId));
 		}
 
-		return query.limit(size).offset(num);
+		return query.limit(size).offset(offset);
 
 	},
 
@@ -244,6 +274,11 @@ const publicService = {
 		}
 	}
 
+}
+
+function toLikeValue(value) {
+	const str = `${value}`;
+	return str.includes('%') ? str : `%${str}%`;
 }
 
 export default publicService

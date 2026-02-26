@@ -33,16 +33,8 @@ export async function email(message, env, ctx) {
 		}
 
 
-		const reader = message.raw.getReader();
-		let content = '';
-
-		while (true) {
-			const { done, value } = await reader.read();
-			if (done) break;
-			content += new TextDecoder().decode(value);
-		}
-
-		const email = await PostalMime.parse(content);
+		const rawEmail = await new Response(message.raw).arrayBuffer();
+		const email = await PostalMime.parse(rawEmail);
 
 		const account = await accountService.selectByEmailIncludeDel({ env: env }, message.to);
 

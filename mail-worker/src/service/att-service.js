@@ -14,22 +14,23 @@ const attService = {
 
 	async addAtt(c, attachments) {
 
-		for (let attachment of attachments) {
+		const uploadTaskList = attachments.map((attachment) => {
 
 			let metadate = {
 				contentType: attachment.mimeType,
-			}
+			};
 
 			if (!attachment.contentId) {
-				metadate.contentDisposition = `attachment;filename=${attachment.filename}`
+				metadate.contentDisposition = `attachment;filename=${attachment.filename}`;
 			} else {
-				metadate.contentDisposition = `inline;filename=${attachment.filename}`
-				metadate.cacheControl = `max-age=259200`
+				metadate.contentDisposition = `inline;filename=${attachment.filename}`;
+				metadate.cacheControl = `max-age=259200`;
 			}
 
-			await r2Service.putObj(c, attachment.key, attachment.content, metadate);
+			return r2Service.putObj(c, attachment.key, attachment.content, metadate);
+		});
 
-		}
+		await Promise.all(uploadTaskList);
 
 		await orm(c).insert(att).values(attachments).run();
 	},
@@ -155,12 +156,14 @@ const attService = {
 
 		await orm(c).insert(att).values(attDataList).run();
 
-		for (let att of attList) {
-			await r2Service.putObj(c, att.key, att.buff, {
+		const uploadTaskList = attList.map((att) => {
+			return r2Service.putObj(c, att.key, att.buff, {
 				contentType: att.type,
 				contentDisposition: `attachment;filename=${att.filename}`
 			});
-		}
+		});
+
+		await Promise.all(uploadTaskList);
 
 	},
 

@@ -82,11 +82,35 @@ curl "https://your-domain.com/api/public/inbox?toEmail=user@your-domain.com&size
   -H "Authorization: <public-token>"
 ```
 
+3. Poll only new emails (faster and smaller payload):
+
+```bash
+curl "https://your-domain.com/api/public/inbox?toEmail=user@your-domain.com&afterId=12345&size=20&includeBody=0" \
+  -H "Authorization: <public-token>"
+```
+
+4. Multi-condition query API (supports lightweight mode):
+
+```bash
+curl -X POST "https://your-domain.com/api/public/emailList" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: <public-token>" \
+  -d '{"toEmail":"%user@your-domain.com%","subject":"%invoice%","includeBody":0,"size":20}'
+```
+
 Notes:
 - `Authorization` for `/public/*` is the raw public token (not `Bearer ...`).
 - `includeBody=1` returns `content` and `text`.
+- `afterId` returns only newer messages (recommended for polling integrations).
 - Use `emailId` for pagination (query older messages before that `emailId`).
+- Public query `size` is capped at `50` for predictable performance.
 - Keep this token on server-side only and rotate it when needed.
+
+## Deploy Safety (Cloudflare CI)
+
+- `mail-worker/wrangler.toml` now keeps required `D1/KV/R2` binding blocks on by default.
+- CI/local deploy runs `mail-worker/scripts/check-bindings.sh` before build/deploy.
+- If binding values are placeholders or missing, deployment fails early to prevent accidental binding drops.
 
 ## Tech Stack
 

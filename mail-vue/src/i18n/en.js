@@ -324,6 +324,7 @@ const en = {
     searchUser: 'Search by user',
     searchEmail: 'Search by Email',
     searchSender: 'Search by Sender',
+    searchContent: 'Search by Content',
     userEmail: 'Email Address'
 }
 

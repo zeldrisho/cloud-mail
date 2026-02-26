@@ -8,6 +8,12 @@ import permService from '../service/perm-service';
 import { t } from '../i18n/i18n'
 import app from '../hono/hono';
 
+const PUBLIC_TOKEN_CACHE_TTL = 3000;
+const publicTokenCache = {
+	value: null,
+	expireAt: 0
+};
+
 const exclude = [
 	'/login',
 	'/register',
@@ -101,7 +107,7 @@ app.use('*', async (c, next) => {
 
 	if (path.startsWith('/public')) {
 
-		const userPublicToken = await c.env.kv.get(KvConst.PUBLIC_KEY);
+		const userPublicToken = await getPublicToken(c);
 		const publicToken = c.req.header(constant.TOKEN_HEADER);
 		if (publicToken !== userPublicToken) {
 			throw new BizError(t('publicTokenFail'), 401);
@@ -174,4 +180,15 @@ function permKeyToPaths(permKeys) {
 		}
 	}
 	return paths;
+}
+
+async function getPublicToken(c) {
+	const now = Date.now();
+	if (publicTokenCache.expireAt > now) {
+		return publicTokenCache.value;
+	}
+	const token = await c.env.kv.get(KvConst.PUBLIC_KEY);
+	publicTokenCache.value = token;
+	publicTokenCache.expireAt = now + PUBLIC_TOKEN_CACHE_TTL;
+	return token;
 }

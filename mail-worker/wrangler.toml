@@ -6,18 +6,18 @@ keep_vars = true
 [observability]
 enabled = true
 
-#[[d1_databases]]
-#binding = "db"			#D1 binding name, keep default
-#database_name = ""		#D1 database name
-#database_id = ""		#D1 database id
+[[d1_databases]]
+binding = "db"			#D1 binding name, keep default
+database_name = "cloud-mail"		#D1 database name
+database_id = "REPLACE_WITH_D1_DATABASE_ID"		#D1 database id
 
-#[[kv_namespaces]]
-#binding = "kv"			#KV binding name, keep default
-#id = ""					#KV namespace id
+[[kv_namespaces]]
+binding = "kv"			#KV binding name, keep default
+id = "REPLACE_WITH_KV_NAMESPACE_ID"					#KV namespace id
 
-#[[r2_buckets]]
-#binding = "r2"			#R2 binding name, keep default
-#bucket_name = ""		#R2 bucket name
+[[r2_buckets]]
+binding = "r2"			#R2 binding name, keep default
+bucket_name = "REPLACE_WITH_R2_BUCKET_NAME"		#R2 bucket name
 
 [assets]
 binding = "assets"		#Static asset binding name, keep default
@@ -36,4 +36,4 @@ crons = ["0 16 * * *"]	#Cron runs daily at midnight
 #jwt_secret = ""			#JWT secret key, set a long random string
 
 [build]
-command = "npm --prefix ../mail-vue install && npm --prefix ../mail-vue run build"
+command = "WRANGLER_CONFIG=wrangler.toml bash ./scripts/check-bindings.sh && npm --prefix ../mail-vue install && npm --prefix ../mail-vue run build"

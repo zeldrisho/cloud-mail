@@ -92,6 +92,10 @@ async function latest() {
       continue;
     }
 
+    if (document.hidden) {
+      continue;
+    }
+
     const latestId = scroll.value.latestEmail?.emailId
 
     if (!scroll.value.firstLoad && autoRefresh > 1) {

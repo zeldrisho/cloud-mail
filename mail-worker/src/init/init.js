@@ -30,6 +30,7 @@ const dbInit = {
 		await this.v2_7DB(c);
 		await this.v2_8DB(c);
 		await this.v2_9DB(c);
+		await this.v3DB(c);
 		await settingService.refresh(c);
 		return c.text('success');
 	},
@@ -39,6 +40,26 @@ const dbInit = {
 			await c.env.db.prepare(`UPDATE setting SET auto_refresh = 5 WHERE auto_refresh = 1;`).run();
 		} catch (e) {
 			console.warn(`Skip field: ${e.message}`);
+		}
+	},
+
+	async v3DB(c) {
+		const indexSqlList = [
+			`CREATE INDEX IF NOT EXISTS idx_email_user_type_del_id ON email(user_id, type, is_del, email_id DESC);`,
+			`CREATE INDEX IF NOT EXISTS idx_email_account_user_type_del_id ON email(account_id, user_id, type, is_del, email_id DESC);`,
+			`CREATE INDEX IF NOT EXISTS idx_email_receive_lookup ON email(to_email, type, is_del, status, email_id DESC);`,
+			`CREATE INDEX IF NOT EXISTS idx_email_type_status_id ON email(type, status, email_id DESC);`,
+			`CREATE INDEX IF NOT EXISTS idx_email_to_email_nocase ON email(to_email COLLATE NOCASE);`,
+			`CREATE INDEX IF NOT EXISTS idx_email_send_email_nocase ON email(send_email COLLATE NOCASE);`,
+			`CREATE INDEX IF NOT EXISTS idx_email_subject_nocase ON email(subject COLLATE NOCASE);`
+		];
+
+		for (const sql of indexSqlList) {
+			try {
+				await c.env.db.prepare(sql).run();
+			} catch (e) {
+				console.warn(`Skip index: ${e.message}`);
+			}
 		}
 	},
 
