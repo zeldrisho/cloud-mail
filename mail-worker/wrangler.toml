@@ -15,10 +15,6 @@ database_id = "${D1_DATABASE_ID}"		#D1 database id (from env)
 binding = "kv"			#KV binding name, keep default
 id = "${KV_NAMESPACE_ID}"					#KV namespace id (from env)
 
-[[r2_buckets]]
-binding = "r2"			#R2 binding name, keep default
-bucket_name = "${R2_BUCKET_NAME}"		#R2 bucket name (from env)
-
 [assets]
 binding = "assets"		#Static asset binding name, keep default
 directory = "./dist"	#Frontend Vue build output directory, default dist

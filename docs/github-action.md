@@ -13,7 +13,6 @@
 | `CLOUDFLARE_ACCOUNT_ID` |    ✅    | Cloudflare account ID |
 | `D1_DATABASE_ID`        |    ✅    | Your D1 database ID |
 | `KV_NAMESPACE_ID`       |    ✅    | Your KV namespace ID |
-| `R2_BUCKET_NAME`        |    ✅    | Your R2 bucket name |
 | `DOMAIN`                |    ✅    | Domain(s) used for mail service, for example `["example.com"]` |
 | `ADMIN`                 |    ✅    | Admin email, for example `admin@example.com` |
 | `JWT_SECRET`            |    ✅    | Random long string used to sign and verify JWT |
