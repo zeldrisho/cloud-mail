@@ -20,7 +20,7 @@ mapfile -t PLACEHOLDERS < <(
 )
 
 MISSING_VARS=()
-for key in "${PLACEHOLDERS[@]:-}"; do
+for key in "${PLACEHOLDERS[@]}"; do
   value="${!key:-}"
   if [ -z "$value" ]; then
     upper_key="$(printf '%s' "$key" | tr '[:lower:]' '[:upper:]')"
