@@ -7,9 +7,12 @@ const dbInit = {
 
 		const authHeader = c.req.header('authorization') || '';
 		const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
-		const secret = c.req.header('x-init-secret') || bearerToken;
+		const secretFromPath = c.req.param?.('secret');
+		const secretFromQuery = c.req.query?.('secret');
+		const secret = c.req.header('x-init-secret') || bearerToken || secretFromPath || secretFromQuery;
+		const jwtSecret = c.env.jwt_secret || c.env.JWT_SECRET;
 
-		if (secret !== c.env.jwt_secret) {
+		if (secret !== jwtSecret) {
 			return c.text('❌ JWT secret mismatch');
 		}
 
