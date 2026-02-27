@@ -9,11 +9,11 @@ enabled = true
 [[d1_databases]]
 binding = "db"			#D1 binding name, keep default
 database_name = "email"		#D1 database name
-database_id = "${d1_database_id}"		#D1 database id (from env)
+database_id = "d14754af-9ce7-477b-ac93-51299dd17a9f"		#D1 database id
 
 [[kv_namespaces]]
 binding = "kv"			#KV binding name, keep default
-id = "${kv_namespace_id}"					#KV namespace id (from env)
+id = "2c708db681cd4335a80f4059bf072840"					#KV namespace id
 
 [assets]
 binding = "assets"		#Static asset binding name, keep default
