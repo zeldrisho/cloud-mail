@@ -48,10 +48,13 @@ const dbInit = {
 			`CREATE INDEX IF NOT EXISTS idx_email_user_type_del_id ON email(user_id, type, is_del, email_id DESC);`,
 			`CREATE INDEX IF NOT EXISTS idx_email_account_user_type_del_id ON email(account_id, user_id, type, is_del, email_id DESC);`,
 			`CREATE INDEX IF NOT EXISTS idx_email_receive_lookup ON email(to_email, type, is_del, status, email_id DESC);`,
+			`CREATE INDEX IF NOT EXISTS idx_email_receive_lookup_nocase ON email(to_email COLLATE NOCASE, type, is_del, email_id DESC);`,
 			`CREATE INDEX IF NOT EXISTS idx_email_type_status_id ON email(type, status, email_id DESC);`,
 			`CREATE INDEX IF NOT EXISTS idx_email_to_email_nocase ON email(to_email COLLATE NOCASE);`,
 			`CREATE INDEX IF NOT EXISTS idx_email_send_email_nocase ON email(send_email COLLATE NOCASE);`,
-			`CREATE INDEX IF NOT EXISTS idx_email_subject_nocase ON email(subject COLLATE NOCASE);`
+			`CREATE INDEX IF NOT EXISTS idx_email_subject_nocase ON email(subject COLLATE NOCASE);`,
+			`CREATE INDEX IF NOT EXISTS idx_att_email_type ON attachments(email_id, type);`,
+			`CREATE INDEX IF NOT EXISTS idx_star_user_email ON star(user_id, email_id);`
 		];
 
 		for (const sql of indexSqlList) {
